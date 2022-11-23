@@ -1,0 +1,7 @@
+## This sample snippet can optionally be included in the autoinstall.yaml file.
+  user-data:
+    landscape:
+      client:
+        url: "https://landscape.canonical.com/message-system"
+        ping_url: "http://landscape.canonical.com/ping"
+        …

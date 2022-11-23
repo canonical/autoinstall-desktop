@@ -1,0 +1,5 @@
+DEFAULT install
+LABEL install
+ KERNEL vmlinuz
+ INITRD initrd
+ APPEND root=/dev/ram0 ramdisk_size=1500000 ip=dhcp cloud-config-url=http://192.168.0.2/autoinstall.yaml url=http://192.168.0.2/ubuntu-22.04.1-live-server-amd64.iso autoinstall

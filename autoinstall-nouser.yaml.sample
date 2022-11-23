@@ -1,0 +1,4 @@
+## This sample snippet can optionally be included in the autoinstall.yaml file.
+  # Do not create a default user
+  user-data:
+    users:

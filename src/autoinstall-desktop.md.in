@@ -1,0 +1,103 @@
+# Using Ubuntu Live-Server to automate Desktop installation
+%% This file has some basic preprocessing, see build_doc.py for details.
+%% Edit this document instead of the generated one.
+
+## Abstract
+This document describes the procedure to perform an automated install of Ubuntu 22.04.x LTS Desktop.  This is implemented by using the Ubuntu 22.04.x LTS Server ISO, installing Desktop on top, and removing unneeded default Server packages.
+
+## Introduction
+The Ubuntu 22.04 LTS live-server ISO uses Subiquity, which means that the
+Subiquity Autoinstall format is used for automation.
+
+This document was written for, and is up to date with, Ubuntu 22.04.1.
+
+As a quick introduction to Autoinstall, it is a YAML format where the installer
+has default values for almost all of the configuration.  As such, simple
+Autoinstalls can be very short, if the default configuration is acceptable.
+
+This document covers just enough Autoinstall to get a Desktop experience.  It's
+highly likely that the Autoinstall will need further configuration to meet
+practical installation requirements.
+
+All sample configuration files and scripts can be found in this git repository.
+
+For more information on Autoinstall, please see:
+* [Automated Server Installs](https://ubuntu.com/server/docs/install/autoinstall)
+* [Automated Server Install Quickstart](https://ubuntu.com/server/docs/install/autoinstall-quickstart)
+* [Automated Server Installs Config File Reference](https://ubuntu.com/server/docs/install/autoinstall-reference)
+
+## Autoinstall
+Below is an almost-ready-to-use autoinstall.yaml. Please adjust the `identity` section to set a password hash and confirm the desired user information.
+```yaml
+#include "../autoinstall.yaml"
+```
+
+### Postinstall script
+At the end of the sample autoinstall.yaml is an example of downloading and calling an external postinstall script.  Here is one such example script, replicating the default language pack installation found on Ubuntu Desktop.
+```sh
+#include "../postinstall.sh"
+```
+
+### Installation without a default user
+It is possible to install the system without a default user. In this situation on first boot of the system, Gnome Initial Setup will start and ask to create a user, its regional settings and a few default options.
+
+To do so, entirely remove the "identity" section from the seed file and add to the end an empty "users" entry in a user-data section as follows:
+```yaml
+#include "../autoinstall-nouser.yaml.sample"
+```
+
+### Registration with Landscape
+To register the installed system with Landscape, cloud-init’s [Landscape](https://cloudinit.readthedocs.io/en/latest/topics/modules.html#landscape) support can be used.  Please ensure that a user-data section is present in the autoinstall data, and supply the appropriate values.  See also [`man landscape-config`](https://manpages.ubuntu.com/manpages/jammy/en/man1/landscape-config.1.html).
+```yaml
+#include "../autoinstall-landscape.yaml.sample"
+```
+
+## Netboot
+The procedure for netboot is equivalent to what is documented in the ["Netbooting the live server installer"](https://discourse.ubuntu.com/t/netbooting-the-live-server-installer/14510) document. That procedure has been updated for Ubuntu 22.04.x and adjusted to deliver the Autoinstall to the install environment.
+
+### dnsmasq
+Assuming dnsmasq will be used to serve the netboot binaries:
+
+1. `apt install dnsmasq`
+2. Configure `/etc/dnsmasq.d/pxe.conf`.  Adjust as appropriate for the installation network:
+```
+#include "../pxe.conf"
+```
+3. Ensure that the `/srv/tftp` directory exists
+`mkdir -p /srv/tftp`
+4. `systemctl restart dnsmasq.service`
+
+### Hosting the Autoinstall and the ISO
+We need to host the Autoinstall YAML somewhere the netboot can get to it.  This is a good opportunity to host the ISO, which should reduce the download time for the largest component.
+
+
+1. Download the [22.04.1 Live Server ISO](https://releases.ubuntu.com/22.04.1/ubuntu-22.04.1-live-server-amd64.iso)
+2. Install a web server.
+3. Copy the configured autoinstall.yaml and the Live Server ISO to the  appropriate directory being served by the web server.
+
+### PXE Configuration
+1. Download pxelinux.0 and put it into place:
+```
+wget http://archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/current/legacy-images/netboot/pxelinux.0
+mv pxelinux.0 /srv/tftp/
+```
+
+2. Mount the Live Server ISO.
+```
+mount ubuntu-22.04.1-live-server-amd64.iso /mnt
+```
+
+3. Copy the kernel, initrd, and ldlinux.c32 to where the dnsmasq serves tftp from:
+```
+cp /mnt/casper/{vmlinuz,initrd} /srv/tftp/
+apt install syslinux-common
+cp /usr/lib/syslinux/modules/bios/ldlinux.c32 /srv/tftp/
+```
+
+4. Create /srv/tftp/pxelinux.cfg/default as below.  Note that the APPEND and all following items should be on a single line, and that the configured URLs should point to the previous setup http server.
+```
+#include "../pxelinux.cfg.default"
+```
+
+# Install
+At this point everything needed should be in place.  Boot the target system.  It will perform the PXE netboot, download the ISO, use the Autoinstall configuration, and finally reboot to the installed environment.
