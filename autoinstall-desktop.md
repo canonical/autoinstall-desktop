@@ -1,5 +1,6 @@
 # Using Ubuntu Live-Server to automate Desktop installation
 
+
 ## Abstract
 This document describes the procedure to perform an automated install of Ubuntu 22.04.x LTS Desktop.  This is implemented by using the Ubuntu 22.04.x LTS Server ISO, installing Desktop on top, and removing unneeded default Server packages.
 
