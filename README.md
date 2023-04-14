@@ -141,9 +141,10 @@ It is possible to install the system without a default user. In this situation o
 
 To do so, entirely remove the "identity" section from the seed file and add to the end an empty "users" entry in a user-data section as follows:
 ```yaml
-  # Do not create a default user
+  # This inhibits user creation, which for Desktop images means that
+  # gnome-initial-setup will prompt for user creation on first boot.
   user-data:
-    users:
+    users: ['']
 ```
 
 ### Registration with Landscape

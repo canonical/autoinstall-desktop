@@ -1,4 +1,5 @@
 ## This sample snippet can optionally be included in the autoinstall.yaml file.
-  # Do not create a default user
+  # This inhibits user creation, which for Desktop images means that
+  # gnome-initial-setup will prompt for user creation on first boot.
   user-data:
-    users:
+    users: ['']
