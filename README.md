@@ -89,12 +89,24 @@ autoinstall:
       printf "network:\n  version: 2\n  renderer: NetworkManager"
       > /target/etc/netplan/01-network-manager-all.yaml
 
+    # disable systemd-networkd and associated units
+    # On desktop, NetworkManager is the default network stack
+    # https://bugs.launchpad.net/ubuntu/+source/systemd/+bug/2036358
+    - curtin in-target -- systemctl disable systemd-networkd.service
+
     # Remove default filesystem and related tools not used with the suggested
     # 'direct' storage layout.  These may yet be required if different
     # partitioning schemes are used.
     - >-
       curtin in-target -- apt-get remove -y
       btrfs-progs cryptsetup* lvm2 xfsprogs
+    # https://github.com/canonical/autoinstall-desktop/issues/9
+    # - curtin in-target -- apt-get install -y cryptsetup lvm2 btrfs-progs xfsprogs
+    # add zram swap
+    # - curtin in-target -- apt-get install -y zram-config
+
+    # at frirst boot - failed to start load apparmor profiles, fix - reinstall apparmor
+    - curtin in-target -- apt reinstall -y --purge apparmor
 
     # Remove other packages present by default in Ubuntu Server but not
     # normally present in Ubuntu Desktop.
@@ -119,6 +131,9 @@ autoinstall:
     # - wget -O /target/postinstall.sh http://192.168.0.2/postinstall.sh
     # - curtin in-target -- bash /postinstall.sh
     # - rm /target/postinstall.sh
+
+    # shut-down the host to avoid an infinite installer loop
+    # - shutdown -h now
 
   # Additional cloud-init configuration affecting the target
   # system can be supplied underneath a user-data section inside of
